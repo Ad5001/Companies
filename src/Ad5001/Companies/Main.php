@@ -14,6 +14,7 @@ use pocketmine\entity\Human;
 use pocketmine\Player;
 use pocketmine\item\Item;
 use pocketmine\utils\Config;
+use pocketmine\math\Vector3;
 
  use pocketmine\nbt\DoubleTag;
  use pocketmine\nbt\CompoundTag;
@@ -28,13 +29,16 @@ use pocketmine\utils\Config;
  
  use Ad5001\Companies\PlayerOwner;
  use Ad5001\Companies\PluginOwner;
+ 
+ 
+    define("PREF_TRAIDERS", C::DARK_GREEN . "[" . C::AQUA . C::BOLD . "Companies" . C::RESET . C::DARK_GREEN . "] ");
+    define("PROF_DEFAULT", ["Traider", imagecreatefrompng(__DIR__ . "\\default.png")]);
+    define("PROF_BUTCHER", ["Butcher", imagecreatefrompng(__DIR__ . "\\butcher.png")]);
+    define("PROF_FARMER", ["Farmer", imagecreatefrompng(__DIR__ . "\\farmer.png")]);
+    define("PROF_COOKER", ["Cooker", imagecreatefrompng(__DIR__ . "\\cooker.png")]);
+ 
 
 class Main extends PluginBase implements Listener{
-    define("PREF_TRAIDERS", C::DARK_GREEN . "[" . C::AQUA . C::BOLD . "Traders" . C::RESET . C::DARK_GREEN . "] ");
-    define("PROF_DEFAULT", ["Traider", imagecreatefrompng(__DIR__ . "default.png")]);
-    define("PROF_BUTCHER", ["Butcher", imagecreatefrompng(__DIR__ . "butcher.png")]);
-    define("PROF_FARMER", ["Farmer", imagecreatefrompng(__DIR__ . "farmer.png")]);
-    define("PROF_COOKER", ["Cooker", imagecreatefrompng(__DIR__ . "cooker.png")]);
     
 public function onEnable(){
     $this->reloadConfig();
@@ -42,7 +46,12 @@ public function onEnable(){
     $this->session = [];
     $this->traders = [];
     $this->trade = [];
-    foreach(json_decode(file_get_contents($this->getDataFolder() . "traders.json")))
+    foreach(json_decode(file_get_contents($this->getDataFolder() . "traders.json"), true) as $world => $tradersarray) {
+        foreach($tradersarray as $traderarr) {
+            $trader = $this->createTraider(new Vector3($traderarr[0], $traderarr[1], $traderarr[2]), $traderarr[5], $traderarr[4], $traderarr[6]);
+            $trader->setNameTag($tradearr[3]);
+        }
+    }
  }
  
  
@@ -76,7 +85,7 @@ public function onEntityDamage(EntityDamageEvent $event) {
                         break;
                         
                         case "rmTrade":
-                        unset($trader->TradersStore["Trades"][$this->session[$sender->getName()][1]];
+                        unset($trader->TradersStore["Trades"][$this->session[$sender->getName()][1]]);
                         break;
                         
                         case "viewTrade":
@@ -100,10 +109,12 @@ public function onEntityDamage(EntityDamageEvent $event) {
             }
             $event->setCancelled();
         } elseif(($player = $event->getEntity()) instanceof Player and isset($this->trade[$player->getName()])) {
-            $event->getDamager()->sendMessage("This player is trading ! Be faiplay !")
+            $event->getDamager()->sendMessage("This player is trading ! Be faiplay !");
         }
     }
 }
+
+
 
 
    public static function hasItem(Player $player, Item $item) {
@@ -122,6 +133,8 @@ public function onEntityDamage(EntityDamageEvent $event) {
    }
 
 
+   
+   
 public function onPlayerChat(PlayerChatEvent $event) {
     
     if(isset($this->trade[$event->getPlayer()->getName()])) {
@@ -157,7 +170,7 @@ public function onPlayerChat(PlayerChatEvent $event) {
             case "N":
             if(isset($trader->TradersStore["Trades"][$t + 1])) {
                 $t = ++$this->trade[$event->getPlayer()->getName()][1];
-                $player->sendMessage("<" . $trader->getNameTag() . "> Ok. here are my next trade: I offer ". $trader->TradersStore["Trades"][$t][1] . " for " . $trader->TradersStore["Trades"][$t][0] . ". Type A in the chat to accept the trade, N to see the next trade, P for the previous trade, or Q to quit the trade.")
+                $player->sendMessage("<" . $trader->getNameTag() . "> Ok. here are my next trade: I offer ". $trader->TradersStore["Trades"][$t][1] . " for " . $trader->TradersStore["Trades"][$t][0] . ". Type A in the chat to accept the trade, N to see the next trade, P for the previous trade, or Q to quit the trade.");
             } else {
                 $player->sendMessage("<" . $trader->getNameTag() . "> Sorry, I don't have any other trades for now.");
             }
@@ -167,7 +180,7 @@ public function onPlayerChat(PlayerChatEvent $event) {
             case "P":
             if(isset($trader->TradersStore["Trades"][$t - 1])) {
                 $t = --$this->trade[$event->getPlayer()->getName()][1];
-                $player->sendMessage("<" . $trader->getNameTag() . "> Ok. here are my next trade: I offer ". $trader->TradersStore["Trades"][$t][1] . " for " . $trader->TradersStore["Trades"][$t][0] . ". Type A in the chat to accept the trade, N to see the next trade, P for the previous trade, or Q to quit the trade.")
+                $player->sendMessage("<" . $trader->getNameTag() . "> Ok. here are my next trade: I offer ". $trader->TradersStore["Trades"][$t][1] . " for " . $trader->TradersStore["Trades"][$t][0] . ". Type A in the chat to accept the trade, N to see the next trade, P for the previous trade, or Q to quit the trade.");
             } else {
                 $player->sendMessage("<" . $trader->getNameTag() . "> Sorry, I don't have any other trades for now.");
             }
@@ -184,18 +197,24 @@ public function onPlayerChat(PlayerChatEvent $event) {
 }
 
 
+
+
 public function onPlayerMove(PlayerMoveEvent $event) {
-    if(isset($this->trade[$event->getPlayer()->getName()]))
+    if(isset($this->trade[$event->getPlayer()->getName()])) {
+        $event->setCancelled();
+    }
 }
+
+
 
 
 public function onCommand(CommandSender $sender, Command $cmd, $label, array $args){
 switch(strtolower($cmd->getName())){
     case "traders":
-    if(isset($subcmd = $args[0])) {
+    if(isset($args[0])) {
         switch(strtolower($args[0])) {
             case "create":
-            $this->createTraider($sender, [["0:0:1", "0:0:1"]], PROF_DEFAULT, new PlayerOwner($sender->getName()));
+            $this->createTraider(new Vector3($sender->x, $sender->y, $sender->z), [["0:0:1", "0:0:1"]], PROF_DEFAULT, new PlayerOwner($sender->getName()));
             $sender->sendMessage(PREF_TRAIDERS . C::GREEN . "Traider has been created at your position ! Customize it with : /traders modify <subcommand> <value> then tap this traider !");
             break;
             case "modify":
@@ -217,17 +236,17 @@ switch(strtolower($cmd->getName())){
                     case "rmtrade":
                     $this->session[$sender->getName()] = ["rmTrade", $args[2]];
                     break;
-                    case "viewTrade":
+                    case "viewtrade":
                     $this->session[$sender->getName()] = ["viewTrade", $args[2]];
                     break;
-                    case "setOwner":
+                    case "setowner":
                     if($sender->hasPermission("traders.setowner")) {
                         $this->session[$sender->getName()] = ["setOwner", $args[2]];
                     }
                     default:
                     
                     case "help":
-                    $sender->sendMessage("Commands: - /traders modify setname <name>\n- /traders modify settrade <id> <Trader purpose> <Player purpose>\n- /traders modify addtrade <Trader purpose> <You purpose>\n- /traders modify rmtrade <id>\n- /traders modify viewtrade <id>\n- /traders modify setowner <Plugin / player name>")
+                    $sender->sendMessage("Commands: - /traders modify setname <name>\n- /traders modify settrade <id> <Trader purpose> <Player purpose>\n- /traders modify addtrade <Trader purpose> <You purpose>\n- /traders modify rmtrade <id>\n- /traders modify viewtrade <id>\n- /traders modify setowner <Plugin / player name>");
                     break;
                 }
             }
@@ -241,7 +260,7 @@ return false;
  
  
  
- public function createTraider(Player $pos, array $trades, $profession = PROF_DEFAULT, Owner $owner) {
+ public function createTraider(Vector3 $pos, array $trades, $profession = PROF_DEFAULT, Owner $owner) {
 		$nbt = new CompoundTag ("", [
             "NameTag" => new StringTag("NameTag", $profession[0] . count($this->traders)),
             "Pos" => new ListTag("Pos", [
@@ -255,23 +274,23 @@ return false;
 			     new DoubleTag(2, 0)
 		    ]),
             "Rotation" => new ListTag("Rotation", [
-			     new FloatTag(0, $pos->yaw),
-			     new FloatTag(1, $pos->pitch)
+			     new FloatTag(0, 0),
+			     new FloatTag(1, 0)
 		    ]),
             "FallDistance" => new FloatTag("FallDistance", 0.0),
             "Fire" => new ShortTag("Fire", (int) 0),
             "Air" => new ShortTag("Air", 0),
             "OnGround" => new ByteTag("OnGround", 1),
             "Invulnerable" => new ByteTag("Invulnerable", 1),
-            "Health" => new ShortTag("Health", (int) 20);
-            "Inventory" = new ListTag("Inventory", [new CompoundTag(false, [
+            "Health" => new ShortTag("Health", (int) 20),
+            "Inventory" => new ListTag("Inventory", [new CompoundTag(false, [
 			     new Short("id", explode(":", $trades[0])[0]),
 			     new Short("Damage", explode(":", $trades[1])),
 			     new Byte("Count", explode(":", $trades[0])[2]),
 			     new Byte("Slot", 9),
 			     new Byte("TrueSlot", 9)
 		    ])]),
-            "TradersStore" => new ListTag("TradersStore") [
+            "TradersStore" => new ListTag("TradersStore", [
                  "Profession" => new StringTag("Profession", $profession),
                  "Trades" => new ListTag("Trades", $trades),
                  "Id" => new LongTag("Id", $i = count($this->traders) + 1),
@@ -281,7 +300,10 @@ return false;
         $this->traders[$i] = Entity::createEntity ( "Human", $pos->chunk, $nbt, $pos );
         $this->traders[$i]->setSkin($profession[1]);
         $this->traders[$i]->spawnToAll();
+        return $this->traders[$i];
  }
+ 
+ 
  
  
  
@@ -291,7 +313,7 @@ return false;
          if(!isset($sertraders[$trader->getLevel()])) {
              $sertraders[$trader->getLevel()] = [];
          }
-         array_push($sertraders[$trader->getLevel()], json_encode([$trader->getNameTag(), $trader->TradersStore["Profession"], $trader->TradersStore["Trades"], $trader->TradersStore["Owner"], ])
+         array_push($sertraders[$trader->getLevel()], [$trader->x, $trader->y, $trader->z, $trader->getNameTag(), $trader->TradersStore["Profession"], $trader->TradersStore["Trades"], $trader->TradersStore["Owner"]]);
      }
      file_put_contents($this->getDataFolder() . "traders.json", json_encode($sertraders));
      
