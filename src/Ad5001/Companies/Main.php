@@ -13,6 +13,7 @@ use pocketmine\entity\Entity;
 use pocketmine\entity\Human;
 use pocketmine\Player;
 use pocketmine\item\Item;
+use pocketmine\utils\Config;
 
  use pocketmine\nbt\DoubleTag;
  use pocketmine\nbt\CompoundTag;
@@ -41,6 +42,7 @@ public function onEnable(){
     $this->session = [];
     $this->traders = [];
     $this->trade = [];
+    foreach(json_decode(file_get_contents($this->getDataFolder() . "traders.json")))
  }
  
  
@@ -225,7 +227,7 @@ switch(strtolower($cmd->getName())){
                     default:
                     
                     case "help":
-                    $sender->sendMessage("Commands: /traders modify")
+                    $sender->sendMessage("Commands: - /traders modify setname <name>\n- /traders modify settrade <id> <Trader purpose> <Player purpose>\n- /traders modify addtrade <Trader purpose> <You purpose>\n- /traders modify rmtrade <id>\n- /traders modify viewtrade <id>\n- /traders modify setowner <Plugin / player name>")
                     break;
                 }
             }
@@ -270,7 +272,7 @@ return false;
 			     new Byte("TrueSlot", 9)
 		    ])]),
             "TradersStore" => new ListTag("TradersStore") [
-                 "Profession" => new StringTag("Profession", $profession[0]),
+                 "Profession" => new StringTag("Profession", $profession),
                  "Trades" => new ListTag("Trades", $trades),
                  "Id" => new LongTag("Id", $i = count($this->traders) + 1),
                  "Owner" => new StringTag("Owner", $owner)
@@ -283,5 +285,15 @@ return false;
  
  
  
- public function 
+ public function onDisable() {
+     $sertraders = [];
+     foreach($this->traders as $trader) {
+         if(!isset($sertraders[$trader->getLevel()])) {
+             $sertraders[$trader->getLevel()] = [];
+         }
+         array_push($sertraders[$trader->getLevel()], json_encode([$trader->getNameTag(), $trader->TradersStore["Profession"], $trader->TradersStore["Trades"], $trader->TradersStore["Owner"], ])
+     }
+     file_put_contents($this->getDataFolder() . "traders.json", json_encode($sertraders));
+     
+ }
 }
