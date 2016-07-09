@@ -50,7 +50,7 @@ class Company {
                         }
                     }
                 }
-                return new Company($company["name"], Server::getInstance()->getPlayer($company["playerowner"]), $members, $traders, $company["inventory"], $company["money"]);
+                return new Company($company["name"], Server::getInstance()->getPlayer($company["playerowner"]), $members, $company["trustedMembers"], $traders, $company["inventory"], $company["money"]);
             }
         }
         return null;
@@ -67,7 +67,7 @@ class Company {
             array_push($traders, $trader->TradersStore["Id"]);
         }
         $cfg = new Config(Server::getInstance()->getPluginPath() . "Companies/companies.json", Config::JSON);
-        $cfg->set("name" => $this->name, "playerowner" => $this->playerowner->getName(), "members" => $members, "traders" => $traders, "money" => $this->name)
+        $cfg->set("name" => $this->name, "playerowner" => $this->playerowner->getName(), "members" => $members, "trustedMembers" => $this->trustmembers, "traders" => $traders, "money" => $this->money);
     }
     
     

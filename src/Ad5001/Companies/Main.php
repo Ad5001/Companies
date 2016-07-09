@@ -288,26 +288,35 @@ switch(strtolower($cmd->getName())){
             
             case "create":
             if($this->economyplugin !== false and isset($args[2]) and !isset($this->player->companyCreate)) {
-                $sender->sendMessage("§a§l[§eCompanies§a]§r Hey ! Creating a company cost " . $this->getConfig()->get("PriceForCompany") . " money ! So are you sure to create company {$args[2]} ? Type the same command to confirm.");
+                $sender->sendMessage("§a§l[§eCompanies§a]§r§e Hey ! Creating a company cost " . $this->getConfig()->get("PriceForCompany") . " money ! So are you sure to create company {$args[2]} ? Type the same command to confirm.");
             }
             if($this->economyplugin !== false and isset($args[2]) and isset($this->player->companyCreate)) {
                 $this->economyplugin->rmMoney($sender, $this->getConfig()->get("PriceForCompany"));
                 array_push($this->companies, new Company($args[2], $sender, [$sender], [], $this->getConfig()->get("StartMoney"), [], 0, false));
-                $sender->sendMessage("§a§l[§eCompanies§a]§r You succefully created company {$args[2]} ! Wanna get some tips to start a company ? Go check out http://mc-pe.ga/C1 !");
+                $sender->sendMessage("§a§l[§eCompanies§a]§r§a You succefully created company {$args[2]} ! Wanna get some tips to start a company ? Go check out http://mc-pe.ga/C1 !");
             }
             break;
             
             case "join":
             if(isset($args[2])) {
                 foreach($this->companies as $company) {
-                    if(strtolower($comany->getName()) == strtolower($args[1])) {
-                        $company->getOwner()->sendMessage("§a§l[§eCompanies§a]§r {$sender->getName()} would like to join your company to be an {$args[2]}. Accept it with /company accept {$sender->getName()}, decline it with /company decline {$sender->getName()}");
+                    if($company->isMember($sender)) {
+                        $sender->sendMessage("§a§l[§eCompanies§a]§r§4 You're already in a company ! Leave it before joining an another");
+                        $has = true;
+                    }
+                }
+                foreach($this->companies as $company) {
+                    if(strtolower($comany->getName()) == strtolower($args[1]) and !isset($has)) {
+                        foreach($company->getTrustedMembers as $member) {
+                            $member->sendMessage("§a§l[§eCompanies§a]§r§a {$sender->getName()} would like to join your company to be an {$args[2]}. Accept it with /company accept {$sender->getName()}, decline it with /company decline {$sender->getName()}");
+                        }
+                        $sender->sendMesage("§a§l[§eCompanies§a]§r§a Request sent.");
                         $sender->postuleToCompany = [$args[1], $args[2]];
                         $found = true;
                     }
                 }
                 if(!isset($found)) {
-                    $sender->sendMessage("§a§l[§eCompanies§a]§r§4 Found no company with name $args[1]");
+                    $sender->sendMessage("§a§l[§eCompanies§a]§r§4 Found no company to hire you with name $args[1]");
                 }
             }
             break;
@@ -315,12 +324,69 @@ switch(strtolower($cmd->getName())){
             case "accept";
             if(isset($args[1])) {
                 foreach($this->companies as $company) {
-                    if(strtolower($company->getOwner()->getName()) == strtolower($sender->getName()) and Server::getInstance()->getPlayer($args[1])->postuleToCompany[0] == $company->getName()) {
-                        $company->getOwner()->sendMessage("You have succefully hired " . $sender->getName() . " to your company as a {$args[2]}.");
-                        $sender->postuleToCompany = [$args[1], $args[2]];
+                    if($company->isTrustedMember($sender) and ($player = Server::getInstance()->getPlayer($args[1])->postuleToCompany[0]) == $company->getName()) {
+                        $sender->sendMessage("§a§l[§eCompanies§a]§r§a You have succefully hired " . $player->getName() . " to your company as a {$player->postuleToCompany[1]}.");
+                        $player->sendMessage("§a§l[§eCompanies§a]§r§a You have been succefully hired to " . $player->postuleToCompany[0]);
+                        $job = $player->postuleToCompany[1];
+                        $company->addMember($player);
+                        foreach($company->getTrustedMembers() as $member) {
+                            $member->sendMessage("§a§l[§eCompanies§a]§r§a " . $player->getName() . " has been hired to the company as {$job}");
+                        }
+                        unset($player->postuleToCompany);
                     }
                 }
             }
+            break;
+            
+            case "decline";
+            if(isset($args[1])) {
+                foreach($this->companies as $company) {
+                    if($company->isTrustedMember($sender) and ($player = Server::getInstance()->getPlayer($args[1])->postuleToCompany[0]) == $company->getName()) {
+                        $sender->sendMessage("§a§l[§eCompanies§a]§r§4 You succefully refused " . $player->getName() . " to your company as a {$args[2]}.");
+                        $player->sendMessage("§a§l[§eCompanies§a]§r§a Yourefused to " . $player->postuleToCompany[0]);
+                        $job = $player->postuleToCompany[1];
+                        foreach($company->getTrustedMembers() as $member) {
+                            $member->sendMessage("§a§l[§eCompanies§a]§r§a " . $player->getName() . " has been refused to the company as {$job}.");
+                        }
+                        unset($player->postuleToCompany);
+                    }
+                }
+            }
+            break;
+            
+            case "fire":
+            if(isset($args[1])) {
+                foreach($this->companies as $company) {
+                    if($company->getOwner()->getName() == $sender->getName() and $company->isMember($player = $this->getServer()->getPlayer($args[1])) and $company->getMoney() > 3 /*To not make the comapny in like no money */* $this->getConfig()->get("FiredCost")) {
+                        $sender->sendMessage("§a§l[§eCompanies§a]§r§4 You succefully fired " . $player->getName() . " from your company.");
+                        $player->sendMessage("§a§l[§eCompanies§a]§r§4 You have been fired from " . $company->getName() . " but earned " . $this->getConfig()->get("FiredCost") . "money ! Go quickly find a new job !");
+                        $this->economyplugin->addMoney($player, $this->getConfig()->get("FiredCost"));
+                        $company->takeMoney($this->getConfig()->get("FiredCost"));
+                        $company->rmMember($player);
+                        foreach($company->getTrustedMembers() as $member) {
+                            $member->sendMessage("§a§l[§eCompanies§a]§r§4 " . $player->getName() . " has been fired from the company.");
+                        }
+                    }
+                }
+            }
+            break;
+            
+            case "trust":
+            if(isset($args[1])) {
+                foreach($this->companies as $company) {
+                    if($company->getOwner()->getName() == $sender->getName() and $company->isMember($player = $this->getServer()->getPlayer($args[1])) and $company->getMoney() > 3 /*To not make the comapny in like no money */* $this->getConfig()->get("FiredCost")) {
+                        $sender->sendMessage("§a§l[§eCompanies§a]§r§a You succefully trusted " . $player->getName() . " on your company.");
+                        $player->sendMessage("§a§l[§eCompanies§a]§r§a You have been trusted by the owner from " . $company->getName() . ". You can now create traders for the company, accept people to the company and many more things !");
+                        $this->economyplugin->addMoney($player, $this->getConfig()->get("FiredCost"));
+                        $company->takeMoney($this->getConfig()->get("FiredCost"));
+                        $company->rmMember($player);
+                        foreach($company->getTrustedMembers() as $member) {
+                            $member->sendMessage("§a§l[§eCompanies§a]§r§4 " . $player->getName() . " has been fired from the company.");
+                        }
+                    }
+                }
+            }
+            break;
         }
     }
 }
