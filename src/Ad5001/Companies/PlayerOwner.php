@@ -52,38 +52,33 @@ class PlayerOwner extends Owner {
     }
     
     
-    public function __toString() { // Change this in your owner !
+    public function __toString()  : string {
         return "\\Ad5001\\Companies\\PlayerOwner//" . $this->name;
     }
     
     
-    public static function __fromString(String $owner) {
-        list($ownerclass, $name) = explode("//", $owner);
-        return new $ownerclass($name);
-    }
-    
-    
-    public function hasItem(Item $item) {
+    public function hasItem(Item $item) : bool {
         return Main::hasItem($this->player);
     }
     
     
-    public function getName() {
+    public function getName() : string {
         return "PlayerOwner";
     }
     
     
-    public function addItem(Item $item) {
+    public function addItem(Item $item) : bool {
          $this->player->addItem($item);
+         return true;
     }
     
     
-    public function removeItem(Item $item) {
+    public function removeItem(Item $item) : bool  {
          $this->player->removeItem($item);
     }
     
     
-    public function haveAccess(Player $player) {
+    public function haveAccess(Player $player) : bool  {
         return $player == $this->player;
     }
 }

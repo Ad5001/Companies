@@ -53,38 +53,34 @@ class CompanyOwner extends Owner {
     }
     
     
-    public function __toString() { // Change this in your owner !
+    public function __toString()  : string { // Change this in your owner !
         return "\\Ad5001\\Companies\\CompanyOwner//" . $this->name;
     }
     
     
-    public static function __fromString(String $owner) {
-        list($ownerclass, $name) = explode("//", $owner);
-        return new $ownerclass($name);
-    }
-    
-    
-    public function hasItem(Item $item) {
+    public function hasItem(Item $item) : bool {
         return $this->company->hasItem($item);
     }
     
     
-    public function getName() {
+    public function getName() : string {
         return "CompanyOwner";
     }
     
     
-    public function addItem(Item $item) {
+    public function addItem(Item $item) : bool {
          $this->company->addItem($item);
+         return true;
     }
     
     
-    public function removeItem(Item $item) {
+    public function removeItem(Item $item) : bool {
          $this->company->removeItem($item);
+         return true;
     }
     
     
-    public function haveAccess(Player $player) {
-        return $player == $this->player;
+    public function haveAccess(Player $player) : bool {
+        return $this->company->isTrustedMember($player);
     }
 }

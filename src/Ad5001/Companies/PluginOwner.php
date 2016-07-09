@@ -49,35 +49,32 @@ class PluginOwner extends Owner {
     }
     
     
-    public function __toString() { // Change this in your owner !
+    public function __toString() : string { // Change this in your owner !
         return "\\Ad5001\\Companies\\PluginOwner//" . $this->name;
     }
     
     
-    public static function __fromString(String $owner) {
-        list($ownerclass, $name) = explode("//", $owner);
-        return new $ownerclass($name);
-    }
     
-    
-    
-    public function hasItem(Item $item) {
+    public function hasItem(Item $item) : bool {
         return true;
     }
     
     
-    public function addItem(Item $item) {}
-    
-    
-    public function removeItem(Item $item) {}
-    
-    
-    public function hasAccess(Player $player) {
-        return $player->hasPermission("trade.plugin");
+    public function addItem(Item $item) : bool {
+        return true;
     }
-    public function hasAccess(Player)
     
-    public function getName() {
+    
+    public function removeItem(Item $item) : bool {
+        return true;
+    }
+    
+    
+    public function hasAccess(Player $player) : bool {
+        return $player->hasPermission("company.traders.plugin");
+    }
+    
+    public function getName() : string {
         return "PluginOwner";
     }
 }

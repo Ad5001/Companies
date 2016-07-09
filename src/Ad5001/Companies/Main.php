@@ -31,13 +31,13 @@ use pocketmine\math\Vector3;
  use Ad5001\Companies\PlayerOwner;
  use Ad5001\Companies\PluginOwner;
  use Ad5001\Companies\Company;
+ use Ad5001\Companies\Economy;
  
  
     define("PREF_TRAIDERS", C::DARK_GREEN . "[" . C::AQUA . C::BOLD . "Companies" . C::RESET . C::DARK_GREEN . "] ");
     define("PROF_DEFAULT", ["Traider", imagecreatefrompng(__DIR__ . "\\default.png")]);
     define("PROF_BUTCHER", ["Butcher", imagecreatefrompng(__DIR__ . "\\butcher.png")]);
     define("PROF_FARMER", ["Farmer", imagecreatefrompng(__DIR__ . "\\farmer.png")]);
-    define("PROF_COOKER", ["Cooker", imagecreatefrompng(__DIR__ . "\\cooker.png")]);
     define("PROF_COOKER", ["Cooker", imagecreatefrompng(__DIR__ . "\\cooker.png")]);
  
 
@@ -58,6 +58,15 @@ public function onEnable(){
     $this->companies = [];
     foreach(json_decode(file_get_contents($this->getDataFolder() . "companies.json"), true) as $company) {
         array_push($this->companies, Company::getCompanyByName($comapny["name"]));
+    }
+    if($this->getServer()->getPluginManager()->getPlugin("EconomyAPI") !== null) {
+        $this->economyplugin = new Economy("EconomyAPI");
+    } elseif($this->getServer()->getPluginManager()->getPlugin("EconomyPlus") !== null) {
+         $this->economyplugin = new Economy("EconomyPlus");
+    } elseif($this->getServer()->getPluginManager()->getPlugin("PocketMoney") !== null) {
+        $this->economyplugin = new Economy("PocketMoney");
+    } else {
+         $this->economyplugin = false;
     }
  }
  
@@ -101,9 +110,15 @@ public function onEntityDamage(EntityDamageEvent $event) {
                         
                         case "setOwner":
                         if($this->session[$sender->getName()][1] == "Plugin") {
-                            $trader->TradersStore["Owner"] == new PluginOwner("Companies");
-                        } elseif($this->getServer()->getPlayer($this->session[$sender->getName()][1]) instanceof Player) {
-                            $trader->TradersStore["Owner"] == new PlayerOwner($this->session[$sender->getName()][1]);
+                            $trader->TradersStore["Owner"] == new PluginOwner($this->session[$sender->getName()][2]);
+                        } elseif($this->session[$sender->getName()][1] == "Player") {
+                            $trader->TradersStore["Owner"] == new PlayerOwner($this->getServer()->getPlayer($this->session[$sender->getName()][2]));
+                        } elseif($this->session[$sender->getName()][1] == "Company") {
+                            foreach($this->companies as $company) {
+                                if($company->isTrustedMember($sender) and strtolower($company->getName()) == strtolower($this->session[$sender->getName()][2]) {
+                                    $trader->TradersStore["Owner"] == new CompanyOwner($company->getName());
+                                }
+                            }
                         }
                         break;
                     }
@@ -247,19 +262,67 @@ switch(strtolower($cmd->getName())){
                     $this->session[$sender->getName()] = ["viewTrade", $args[2]];
                     break;
                     case "setowner":
-                    if($sender->hasPermission("traders.setowner")) {
-                        $this->session[$sender->getName()] = ["setOwner", $args[2]];
+                    if($sender->hasPermission("traders.setowner") and isset($args[3])) {
+                        $this->session[$sender->getName()] = ["setOwner", $args[2], $args[3]];
                     }
                     default:
-                    
+                    $sender->sendMessage("Command {$args[1]} not found");
                     case "help":
                     $sender->sendMessage("Commands: - /traders modify setname <name>\n- /traders modify settrade <id> <Trader purpose> <Player purpose>\n- /traders modify addtrade <Trader purpose> <You purpose>\n- /traders modify rmtrade <id>\n- /traders modify viewtrade <id>\n- /traders modify setowner <Plugin / player name>");
                     break;
                 }
             }
+            break;
+            default:
+            $sender->sendMessage("Command {$args[1]} not found");
+            case "help":
+            $sender->sendMessage("Commands: - /traders create\n- /traders modify <sub command>");
+            break;
         }
     }
     break;
+    case "company":
+    if(isset($args[0])) {
+        
+        switch($args[0]) {
+            
+            case "create":
+            if($this->economyplugin !== false and isset($args[2]) and !isset($this->player->companyCreate)) {
+                $sender->sendMessage("§a§l[§eCompanies§a]§r Hey ! Creating a company cost " . $this->getConfig()->get("PriceForCompany") . " money ! So are you sure to create company {$args[2]} ? Type the same command to confirm.");
+            }
+            if($this->economyplugin !== false and isset($args[2]) and isset($this->player->companyCreate)) {
+                $this->economyplugin->rmMoney($sender, $this->getConfig()->get("PriceForCompany"));
+                array_push($this->companies, new Company($args[2], $sender, [$sender], [], $this->getConfig()->get("StartMoney"), [], 0, false));
+                $sender->sendMessage("§a§l[§eCompanies§a]§r You succefully created company {$args[2]} ! Wanna get some tips to start a company ? Go check out http://mc-pe.ga/C1 !");
+            }
+            break;
+            
+            case "join":
+            if(isset($args[2])) {
+                foreach($this->companies as $company) {
+                    if(strtolower($comany->getName()) == strtolower($args[1])) {
+                        $company->getOwner()->sendMessage("§a§l[§eCompanies§a]§r {$sender->getName()} would like to join your company to be an {$args[2]}. Accept it with /company accept {$sender->getName()}, decline it with /company decline {$sender->getName()}");
+                        $sender->postuleToCompany = [$args[1], $args[2]];
+                        $found = true;
+                    }
+                }
+                if(!isset($found)) {
+                    $sender->sendMessage("§a§l[§eCompanies§a]§r§4 Found no company with name $args[1]");
+                }
+            }
+            break;
+            
+            case "accept";
+            if(isset($args[1])) {
+                foreach($this->companies as $company) {
+                    if(strtolower($company->getOwner()->getName()) == strtolower($sender->getName()) and Server::getInstance()->getPlayer($args[1])->postuleToCompany[0] == $company->getName()) {
+                        $company->getOwner()->sendMessage("You have succefully hired " . $sender->getName() . " to your company as a {$args[2]}.");
+                        $sender->postuleToCompany = [$args[1], $args[2]];
+                    }
+                }
+            }
+        }
+    }
 }
 return false;
  }

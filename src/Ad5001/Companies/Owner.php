@@ -42,14 +42,12 @@ namespace Ad5001\Companies;
 abstract class Owner {
     
     
-    public abstract function __construct(Owner $owner) {
+    public function __construct($owner) {
         $this->owner = $owner;
     }
     
     
-    public abstract function __toString() { // Change this in your owner !
-        return "\\Ad5001\\Companies\\" . $this->owner . "//" . $this->owner->getName();
-    }
+    public abstract function __toString() : string;
     
     
     public static function __fromString(String $owner) {
@@ -58,17 +56,17 @@ abstract class Owner {
     }
     
     
-    public abstract function getName() {}
+    public abstract function getName() : string;
     
     
-    public abstract function hasItem(Item $item) {}
+    public abstract function hasItem(Item $item) : bool;
     
     
-    public abstract function removeItem(Item $item) {}
+    public abstract function removeItem(Item $item) : bool;
     
     
-    public abstract function addItem(Item $item) {}
+    public abstract function addItem(Item $item) : bool;
     
     
-    public abstract function haveAccess(Player $player) {}
+    public abstract function haveAccess(Player $player) : bool;
 }
