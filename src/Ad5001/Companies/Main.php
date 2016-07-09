@@ -27,14 +27,17 @@ use pocketmine\math\Vector3;
  use pocketmine\nbt\StringTag;
  
  
+ use Ad5001\Companies\Owner;
  use Ad5001\Companies\PlayerOwner;
  use Ad5001\Companies\PluginOwner;
+ use Ad5001\Companies\Company;
  
  
     define("PREF_TRAIDERS", C::DARK_GREEN . "[" . C::AQUA . C::BOLD . "Companies" . C::RESET . C::DARK_GREEN . "] ");
     define("PROF_DEFAULT", ["Traider", imagecreatefrompng(__DIR__ . "\\default.png")]);
     define("PROF_BUTCHER", ["Butcher", imagecreatefrompng(__DIR__ . "\\butcher.png")]);
     define("PROF_FARMER", ["Farmer", imagecreatefrompng(__DIR__ . "\\farmer.png")]);
+    define("PROF_COOKER", ["Cooker", imagecreatefrompng(__DIR__ . "\\cooker.png")]);
     define("PROF_COOKER", ["Cooker", imagecreatefrompng(__DIR__ . "\\cooker.png")]);
  
 
@@ -48,9 +51,13 @@ public function onEnable(){
     $this->trade = [];
     foreach(json_decode(file_get_contents($this->getDataFolder() . "traders.json"), true) as $world => $tradersarray) {
         foreach($tradersarray as $traderarr) {
-            $trader = $this->createTraider(new Vector3($traderarr[0], $traderarr[1], $traderarr[2]), $traderarr[5], $traderarr[4], $traderarr[6]);
+            $trader = $this->createTraider(new Vector3($traderarr[0], $traderarr[1], $traderarr[2]), $traderarr[5], $traderarr[4], Owner::__fromString($traderarr[6]));
             $trader->setNameTag($tradearr[3]);
         }
+    }
+    $this->companies = [];
+    foreach(json_decode(file_get_contents($this->getDataFolder() . "companies.json"), true) as $company) {
+        array_push($this->companies, Company::getCompanyByName($comapny["name"]));
     }
  }
  
@@ -68,7 +75,7 @@ public function onEntityDamage(EntityDamageEvent $event) {
             
             if(isset($trader->TradersStore) and !isset($this->trade[$sender->getName()])) {
                 
-                if(isset($this->session[$sender->getName()]) and $trader->TradersStore["Owner"]->hasAccess($trader, $sender)) {
+                if(isset($this->session[$sender->getName()]) and $trader->TradersStore["Owner"]->hasAccess($sender)) {
                     
                     switch($this->session[$sender->getName()][0]) {
                         
@@ -294,6 +301,7 @@ return false;
                  "Profession" => new StringTag("Profession", $profession),
                  "Trades" => new ListTag("Trades", $trades),
                  "Id" => new LongTag("Id", $i = count($this->traders) + 1),
+                 "TimeLeftBeforePay" => new LongTag("TimeLeftBeforePay", 0),
                  "Owner" => new StringTag("Owner", $owner)
             ])
         ]);
@@ -318,4 +326,24 @@ return false;
      file_put_contents($this->getDataFolder() . "traders.json", json_encode($sertraders));
      
  }
+}
+
+
+class PayTask extends \pocketmine\scheduler\PluginTask {
+    
+    public function __construct(Main $plugin) {
+        parent::__construct($plugin);
+        $this->plugin = $plugin;
+        $this->traiders = $plugin->traiders;
+    }
+    
+    
+    public function onRun($tick) {
+        foreach($this->traiders as $traider) {
+            $traders->TradersStore["TimeLeftBeforePay"] += 1;
+            if($traders->TradersStore["TimeLeftBeforePay"] == 30 * 20 * 60 /* One minecraft month*/) {
+                // TODO : Make the owner pay.
+            }
+        }
+    }
 }

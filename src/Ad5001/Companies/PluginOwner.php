@@ -37,6 +37,8 @@ namespace Ad5001\Companies;
 #
 
 use pocketmine\item\Item;
+use pocketmine\Player;
+use pocketmine\Server;
 
 class PluginOwner extends Owner {
     
@@ -64,6 +66,16 @@ class PluginOwner extends Owner {
     }
     
     
+    public function addItem(Item $item) {}
+    
+    
+    public function removeItem(Item $item) {}
+    
+    
+    public function hasAccess(Player $player) {
+        return $player->hasPermission("trade.plugin");
+    }
+    public function hasAccess(Player)
     
     public function getName() {
         return "PluginOwner";

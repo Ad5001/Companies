@@ -71,4 +71,19 @@ class PlayerOwner extends Owner {
     public function getName() {
         return "PlayerOwner";
     }
+    
+    
+    public function addItem(Item $item) {
+         $this->player->addItem($item);
+    }
+    
+    
+    public function removeItem(Item $item) {
+         $this->player->removeItem($item);
+    }
+    
+    
+    public function haveAccess(Player $player) {
+        return $player == $this->player;
+    }
 }

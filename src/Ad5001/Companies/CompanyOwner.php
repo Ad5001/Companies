@@ -18,7 +18,7 @@ namespace Ad5001\Companies;
 #      public function getName() {
 #           return "<YOUR_CLASS_NAME>";
 #      }
-#
+#      
 #      public function hasItem(Item $item) {
 #          // Return true if it has, false if it haven't.
 #      }
@@ -31,24 +31,30 @@ namespace Ad5001\Companies;
 #          // Add the item.
 #      }
 #      
-#      public function canAccess(Player $player) {
-#         // Define if the player have the access or not.
-#      }
 # }
 #
 #
 #
 
-abstract class Owner {
+use pocketmine\item\Item;
+use pocketmine\Player;
+use pocketmine\Server;
+
+use Ad5001\Companies\Main;
+use Ad5001\Companies\Company;
+
+class CompanyOwner extends Owner {
     
     
-    public abstract function __construct(Owner $owner) {
-        $this->owner = $owner;
+    public function __construct(String $name) {
+        parent::__construct($this);
+        $this->name = $name;
+        $this->company = Company::getCompanyByName($name);
     }
     
     
-    public abstract function __toString() { // Change this in your owner !
-        return "\\Ad5001\\Companies\\" . $this->owner . "//" . $this->owner->getName();
+    public function __toString() { // Change this in your owner !
+        return "\\Ad5001\\Companies\\CompanyOwner//" . $this->name;
     }
     
     
@@ -58,17 +64,27 @@ abstract class Owner {
     }
     
     
-    public abstract function getName() {}
+    public function hasItem(Item $item) {
+        return $this->company->hasItem($item);
+    }
     
     
-    public abstract function hasItem(Item $item) {}
+    public function getName() {
+        return "CompanyOwner";
+    }
     
     
-    public abstract function removeItem(Item $item) {}
+    public function addItem(Item $item) {
+         $this->company->addItem($item);
+    }
     
     
-    public abstract function addItem(Item $item) {}
+    public function removeItem(Item $item) {
+         $this->company->removeItem($item);
+    }
     
     
-    public abstract function haveAccess(Player $player) {}
+    public function haveAccess(Player $player) {
+        return $player == $this->player;
+    }
 }

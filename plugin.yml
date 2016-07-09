@@ -4,6 +4,12 @@ author:  Ad5001
 version: 1.0
 api: [2.0.0]
 main: Ad5001\Companies\Main
-commands: []
-permissions: []
+commands: 
+   traders:
+     description: "Main traders of Companies command"
+     usage: /trader <subcommand> <params>
+     permission: companies.traders.command
+permissions: 
+   companies.traders.command:
+      default: true
 ...
